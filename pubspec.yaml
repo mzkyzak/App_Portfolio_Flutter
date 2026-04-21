@@ -1,8 +1,8 @@
-name: website_flutter
-description: "A new Flutter project."
+name: portfolio_mzkyzak
+description: "website_portfolio-flutter"
 publish_to: 'none' 
 
-version: 1.0.0+1
+version: 2.1.0+1
 
 environment:
   sdk: ^3.11.4
@@ -14,18 +14,26 @@ dependencies:
   google_fonts: ^6.1.0
   animated_text_kit: ^4.2.2
   url_launcher: ^6.2.1
-  flutter_svg: ^2.0.10  # TAMBAHKAN INI UNTUK MEMUNCULKAN IKON SVG
+  flutter_svg: ^2.0.10
+  http: ^1.2.0 
+  font_awesome_flutter: ^10.7.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  #  Tambahkan ini untuk generator icon APK
+  flutter_launcher_icons: ^0.13.1
+
+# 🔥 KONFIGURASI ICON APK 
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app_icon.png" # 👈 Pastikan punya file app_icon.png di folder assets
+  adaptive_icon_background: "#030014" 
+  adaptive_icon_foreground: "assets/app_icon.png"
 
 flutter:
   uses-material-design: true
-
-  # Aku buka bagian assets ini agar kamu bisa menampilkan gambar
-  # Pastikan kamu membuat folder 'assets' di dalam project kamu
-  # dan memasukkan gambar-gambar portofoliomu ke dalamnya.
   assets:
     - assets/

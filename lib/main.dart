@@ -1,10 +1,13 @@
 import 'dart:ui';
 import 'dart:math' as math;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyPortfolioApp());
@@ -27,56 +30,247 @@ class MyPortfolioApp extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 1. PRELOADER SCREEN (KILAT & GLITCHY)
-// ==========================================
 class PreloaderScreen extends StatefulWidget {
   const PreloaderScreen({super.key});
+
   @override
   State<PreloaderScreen> createState() => _PreloaderScreenState();
 }
+
 class _PreloaderScreenState extends State<PreloaderScreen> {
   double progress = 0;
+  bool isLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _simulateLoading();
   }
+
   void _simulateLoading() async {
-    for (int i = 0; i <= 100; i += 4) {
-      await Future.delayed(const Duration(milliseconds: 40));
+    for (int i = 0; i <= 100; i += 2) {
+      await Future.delayed(const Duration(milliseconds: 30));
       if (mounted) setState(() => progress = i.toDouble());
     }
+
     if (mounted) {
-      Navigator.pushReplacement(context, PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 1500),
-        pageBuilder: (_, __, ___) => const MainPortfolioScreen(),
-        transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: ScaleTransition(scale: Tween<double>(begin: 1.2, end: 1.0).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutExpo)), child: child)),
-      ));
+      setState(() {
+        isLoaded = true;
+      });
+    }
+
+    await Future.delayed(const Duration(milliseconds: 1800));
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 1500),
+          pageBuilder: (_, __, ___) => const MainPortfolioScreen(),
+          transitionsBuilder: (_, anim, __, child) => FadeTransition(
+            opacity: anim,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 1.1, end: 1.0).animate(
+                CurvedAnimation(parent: anim, curve: Curves.easeOutExpo),
+              ),
+              child: child,
+            ),
+          ),
+        ),
+      );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF030014),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("${progress.toInt()}%", style: GoogleFonts.outfit(fontSize: 120, fontWeight: FontWeight.w900, color: Colors.white, shadows: [Shadow(color: Colors.redAccent.withOpacity(0.5), blurRadius: 20)])),
-            const Text("S Y S T E M   B O O T I N G", style: TextStyle(color: Colors.blueAccent, letterSpacing: 8, fontWeight: FontWeight.bold, fontSize: 12)),
-            const SizedBox(height: 40),
-            Container(width: 250, height: 4, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)), child: Align(alignment: Alignment.centerLeft, child: Container(width: (progress / 100) * 250, decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.red, Colors.purple, Colors.blue]), borderRadius: BorderRadius.circular(10), boxShadow: const [BoxShadow(color: Colors.blue, blurRadius: 10)])))),
-          ],
-        ),
+      body: Stack(
+        children: [
+          Center(
+            child: Opacity(
+              opacity: 0.1,
+              child: CustomPaint(
+                size: const Size(350, 350),
+                painter: HexagonPainter(),
+              ),
+            ),
+          ),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 700),
+            opacity: isLoaded ? 0.0 : 1.0,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 700),
+              scale: isLoaded ? 0.8 : 1.0,
+              curve: Curves.easeInOutBack,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          "${progress.toInt()}",
+                          style: GoogleFonts.outfit(
+                            fontSize: 130,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            height: 1.0,
+                            shadows: [const Shadow(color: Colors.white24, blurRadius: 20)],
+                          ),
+                        ),
+                        Text(
+                          "%",
+                          style: GoogleFonts.outfit(
+                            fontSize: 80,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFFEF4444),
+                            shadows: [const Shadow(color: Colors.redAccent, blurRadius: 20)],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 0),
+                    Text(
+                      "SEDANG MEMASUKI WEBSITE",
+                      style: const TextStyle(
+                        color: Color(0xFFEF4444),
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        shadows: [Shadow(color: Colors.redAccent, blurRadius: 10)],
+                      ),
+                    ),
+                    const SizedBox(height: 60),
+                    Container(
+                      width: 280,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 75),
+                          width: (progress / 100) * 280,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFDC2626), Color(0xFF9333EA), Color(0xFF2563EB)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(color: Colors.blueAccent.withOpacity(0.6), blurRadius: 10)
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 800),
+            opacity: isLoaded ? 1.0 : 0.0,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 800),
+              scale: isLoaded ? 1.0 : 0.9,
+              curve: Curves.easeOutBack,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "WELCOME TO APLIKASI PORTFOLIO",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: const Color(0xFFEF4444),
+                        letterSpacing: 4,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        shadows: [Shadow(color: Colors.red.withOpacity(0.5), blurRadius: 15)],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "TAUFIQ IKHSAN\nMUZAKY",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.1,
+                        letterSpacing: -1,
+                        shadows: [const Shadow(color: Colors.white54, blurRadius: 25)],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      "by: mzkyzak",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        letterSpacing: 3,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ==========================================
+class HexagonPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint1 = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    final paint2 = Paint()
+      ..color = const Color(0xFF3B82F6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    var path1 = Path();
+    path1.moveTo(size.width * 0.5, size.height * 0.1);
+    path1.lineTo(size.width * 0.9, size.height * 0.3);
+    path1.lineTo(size.width * 0.9, size.height * 0.7);
+    path1.lineTo(size.width * 0.5, size.height * 0.9);
+    path1.lineTo(size.width * 0.1, size.height * 0.7);
+    path1.lineTo(size.width * 0.1, size.height * 0.3);
+    path1.close();
+
+    var path2 = Path();
+    path2.moveTo(size.width * 0.5, size.height * 0.2);
+    path2.lineTo(size.width * 0.8, size.height * 0.35);
+    path2.lineTo(size.width * 0.8, size.height * 0.65);
+    path2.lineTo(size.width * 0.5, size.height * 0.8);
+    path2.lineTo(size.width * 0.2, size.height * 0.65);
+    path2.lineTo(size.width * 0.2, size.height * 0.35);
+    path2.close();
+
+    canvas.drawPath(path1, paint1);
+    canvas.drawPath(path2, paint2);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
 // 2. MAIN SCREEN
-// ==========================================
 class MainPortfolioScreen extends StatefulWidget {
   const MainPortfolioScreen({super.key});
   @override
@@ -86,6 +280,9 @@ class MainPortfolioScreen extends StatefulWidget {
 class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
   final ScrollController _scrollController = ScrollController();
   int _selectedTabIndex = 0;
+  
+  
+  bool _isSending = false; 
 
   final GlobalKey _homeKey = GlobalKey();
   final GlobalKey _aboutKey = GlobalKey();
@@ -105,13 +302,50 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
     Scrollable.ensureVisible(key.currentContext!, duration: const Duration(milliseconds: 1200), curve: Curves.easeInOutCubic);
   }
 
-  void _kirimPesan() {
+  // FUNGSI KIRIM PESAN KE EMAIL 
+  Future<void> _kirimPesan() async {
     if (_nameController.text.isEmpty || _emailController.text.isEmpty || _messageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Isi semua kolom dulu bos!"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Harap isi semua kolom dulu lah! ⚠️"), backgroundColor: Colors.redAccent));
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pesan meluncur ke server! 🚀"), backgroundColor: Colors.green));
-    _nameController.clear(); _emailController.clear(); _messageController.clear();
+
+    setState(() => _isSending = true);
+
+    final data = {
+      'name': _nameController.text,
+      'email': _emailController.text,
+      'message': _messageController.text,
+      '_subject': 'Pesan dari Flutter App: ${_nameController.text}',
+      '_captcha': 'false',
+      '_template': 'table'
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://formsubmit.co/ajax/taufiqikhsanmuzaky18@gmail.com'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': 'https://portfolio-mzkyzak.vercel.app', 
+          'Referer': 'https://portfolio-mzkyzak.vercel.app/',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pesan berhasil di kirim Gmail akan di jawab oleh mzkyzak! 🚀"), backgroundColor: Colors.green));
+        _nameController.clear();
+        _emailController.clear();
+        _messageController.clear();
+      } else {
+        throw Exception("Gagal kirim karena fatal❌");
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Koneksi gagal, coba lagi nanti ya."), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
   @override
@@ -119,7 +353,7 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // BACKGROUND BERGERAK (DYNAMIC FLOATING)
+          // BACKGROUND BERGERAK 
           FloatingBackground(color: Colors.red[800]!, size: 400, speed: 0.5, startOffset: const Offset(-100, -100)),
           FloatingBackground(color: Colors.blue[800]!, size: 450, speed: 0.7, startOffset: const Offset(200, 300)),
           FloatingBackground(color: Colors.purple[900]!, size: 500, speed: 0.6, startOffset: const Offset(-50, 600)),
@@ -176,50 +410,132 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
 
   Widget _navItem(String title, VoidCallback onTap) => Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: GestureDetector(onTap: onTap, child: Text(title.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.5))));
 
-  Widget _buildHeroSection() {
+ Widget _buildHeroSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          CapCutReveal(scrollController: _scrollController, child: Text("Taufiq Ikhsan\nMuzaky".toUpperCase(), textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 44, fontWeight: FontWeight.w900, height: 1.1, shadows: [const Shadow(color: Colors.blueAccent, blurRadius: 30)]))),
-          const SizedBox(height: 10),
-          
-          // EFEK NGETIK YANG REPLAY TIAP SCROLL
           CapCutReveal(
             scrollController: _scrollController,
-            delay: 200,
-            onVisible: () => setState(() {}), // Paksa rebuild buat restart ngetik
+            child: Text(
+              "Taufiq Ikhsan\nMuzaky".toUpperCase(),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 44,
+                fontWeight: FontWeight.w900,
+                height: 1.1,
+                shadows: [const Shadow(color: Colors.blueAccent, blurRadius: 30)]
+              )
+            )
+          ),
+          const SizedBox(height: 10),
+          CapCutReveal(
+            scrollController: _scrollController,
+            delay: 300,
+            onVisible: () => setState(() {}),
             child: SizedBox(
               height: 40,
               child: DefaultTextStyle(
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent, fontStyle: FontStyle.italic),
+                style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.redAccent, fontStyle: FontStyle.italic),
                 child: AnimatedTextKit(
-                  key: UniqueKey(), // Ini rahasianya biar restart terus
+                  key: UniqueKey(),
                   isRepeatingAnimation: true,
-                  animatedTexts: [TypewriterAnimatedText('Kreatif'), TypewriterAnimatedText('Inovatif'), TypewriterAnimatedText('Usaha')],
+                  animatedTexts: [
+                    TypewriterAnimatedText('Kreatif'),
+                    TypewriterAnimatedText('Inovatif'),
+                    TypewriterAnimatedText('Usaha')
+                  ],
                 ),
               ),
             ),
           ),
-          
           const SizedBox(height: 30),
           CapCutReveal(
-            scrollController: _scrollController, delay: 400,
+            scrollController: _scrollController,
+            delay: 400,
             child: GlowingBorder(
-              child: ClipRRect(borderRadius: BorderRadius.circular(50), child: Image.asset('assets/website_mzkyzak.gif', width: 300, height: 300, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.network('https://cdn.dribbble.com/users/1059583/screenshots/4171367/coding.gif', width: 300, height: 300, fit: BoxFit.cover))),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(50),
+                child: Image.asset(
+                  'assets/website_mzkyzak.gif',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => Image.network(
+                    'https://cdn.dribbble.com/users/1059583/screenshots/4171367/coding.gif',
+                    width: 300,
+                    height: 300,
+                    fit: BoxFit.cover
+                  )
+                )
+              ),
             ),
           ),
           const SizedBox(height: 40),
-          CapCutReveal(scrollController: _scrollController, delay: 600, child: _buildGlassCard(child: const Text("Kepribadian saya terbentuk melalui kegiatan yang melatih kedisiplinan, kerja sama tim, tanggung jawab, kepemimpinan, serta kepedulian sosial. Saya menciptakan dan mengembangkan website, game, serta aplikasi untuk membangun solusi digital yang fungsional dan ramah pengguna.", textAlign: TextAlign.justify, style: TextStyle(color: Colors.white70, height: 1.8)))),
+          CapCutReveal(
+            scrollController: _scrollController, 
+            delay: 600,
+            onVisible: () => setState(() {}),
+            child: _buildGlassCard(
+              child: SizedBox(
+                width: double.infinity,
+                height: 180, 
+                child: DefaultTextStyle(
+                  style: const TextStyle(color: Colors.white70, height: 1.8, fontSize: 14),
+                  child: AnimatedTextKit(
+                    key: UniqueKey(),
+                    isRepeatingAnimation: false, 
+                    displayFullTextOnTap: true, 
+                    animatedTexts: [
+                      TypewriterAnimatedText(
+                           "Kedisiplinan, kerja sama tim, dan tanggung jawab adalah nilai utama yang saya pegang dalam bekerja. Saya senang mengembangkan website, game, maupun aplikasi untuk menciptakan solusi digital yang bermanfaat, berfungsi dengan baik, serta mudah digunakan oleh siapa saja.",
+                          speed: const Duration(milliseconds: 15), 
+                         textAlign: TextAlign.justify, 
+                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 30),
           CapCutReveal(
-            scrollController: _scrollController, delay: 800,
+            scrollController: _scrollController,
+            delay: 800,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                GestureDetector(onTap: () => _scrollToSection(_portfolioKey), child: Container(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), decoration: BoxDecoration(gradient: const LinearGradient(colors: [Colors.red, Colors.blue]), borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.6), blurRadius: 20, offset: const Offset(0, 5))]), child: const Text("PORTFOLIO ME", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 11, color: Colors.white)))),
+                GestureDetector(
+                  onTap: () => _scrollToSection(_portfolioKey),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Colors.red, Colors.blue]),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.6), blurRadius: 20, offset: const Offset(0, 5))]
+                    ),
+                    child: const Text(
+                      "PORTFOLIO ME",
+                      style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 11, color: Colors.white)
+                    )
+                  )
+                ),
                 const SizedBox(width: 16),
-                GestureDetector(onTap: () => _scrollToSection(_aboutKey), child: Container(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), border: Border.all(color: Colors.white.withOpacity(0.2)), borderRadius: BorderRadius.circular(12)), child: const Text("PROFILE", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 11, color: Colors.white)))),
+                GestureDetector(
+                  onTap: () => _scrollToSection(_aboutKey),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      borderRadius: BorderRadius.circular(12)
+                    ),
+                    child: const Text(
+                      "PROFILE",
+                      style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 11, color: Colors.white)
+                    )
+                  )
+                ),
               ],
             ),
           )
@@ -228,30 +544,224 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
     );
   }
 
-  Widget _buildAboutSection() {
+Widget _buildAboutSection() {
+    
+    bool isDesktop = MediaQuery.of(context).size.width >= 1024;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: CapCutReveal(
+        scrollController: _scrollController,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1000), 
+          child: isDesktop ? _buildAboutDesktopLayout() : _buildAboutMobileLayout(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutDesktopLayout() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        
+        Expanded(
+          flex: 5,
+          child: Column(
+            children: [
+              _buildProfileImage(),
+              const SizedBox(height: 48),
+              _buildStatsGrid(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 60),
+        
+        Expanded(
+          flex: 7,
+          child: _buildAboutTextContent(),
+        )
+      ],
+    );
+  }
+
+  Widget _buildAboutMobileLayout() {
+    return Column(
+      children: [
+        _buildProfileImage(),
+        const SizedBox(height: 40),
+        _buildStatsGrid(),
+        const SizedBox(height: 50),
+        _buildAboutTextContent(),
+      ],
+    );
+  }
+
+  Widget _buildProfileImage() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+       
+        Container(
+          width: 280, height: 280,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(colors: [Colors.red, Colors.blue, Colors.redAccent], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.4), blurRadius: 40, spreadRadius: 10)],
+          ),
+        ),
+       
+        Container(
+          width: 270, height: 270,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF030014),
+            border: Border.all(color: const Color(0xFF030014), width: 8),
+            image: const DecorationImage(image: AssetImage('assets/Profile.jpg'), fit: BoxFit.cover),
+            boxShadow: [BoxShadow(color: Colors.redAccent.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 10))],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsGrid() {
+    return SizedBox(
+      width: 380, 
       child: Column(
         children: [
-          CapCutReveal(scrollController: _scrollController, child: GlowingBorder(isCircle: true, child: Container(width: 250, height: 250, decoration: const BoxDecoration(shape: BoxShape.circle, image: DecorationImage(image: AssetImage('assets/Profile.jpg'), fit: BoxFit.cover))))),
-          const SizedBox(height: 40),
-          CapCutReveal(scrollController: _scrollController, delay: 200, child: RichText(text: const TextSpan(style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white), children: [TextSpan(text: "About "), TextSpan(text: "Me", style: TextStyle(color: Colors.blueAccent))]))),
-          const SizedBox(height: 30),
-          CapCutReveal(
-            scrollController: _scrollController, delay: 400,
-            child: _buildGlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(text: const TextSpan(style: TextStyle(color: Colors.white70, height: 1.8, fontSize: 14), children: [TextSpan(text: "Perkenalkan, nama saya "), TextSpan(text: "Taufiq Ikhsan Muzaky (Zaky)\n\n", style: TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic, color: Colors.white)), TextSpan(text: "Saya adalah Seorang siswa Dari jurusan Rekayasa Perangkat Lunak Di sekolah Smkn 2 Jakarta Pusat karena saya memiliki minat dalam pengembangan aplikasi, game dan website. Dan Berpengalaman mengerjakan berbagai proyek sekolah dan mandiri, saya berfokus pada pembuatan solusi digital yang responsif, fungsional, dan ramah pengguna.")])),
-                  const SizedBox(height: 20),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), border: Border.all(color: Colors.red.withOpacity(0.5)), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 15)]), child: const Text("DOWNLOAD CV", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white)))
-                ],
-              ),
-            ),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard("Location", "Jakarta, ID", Colors.redAccent)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard("Education", "SMKN 2 JKT", Colors.blueAccent)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: _buildIconStatCard("📁", "Projects", "6+", Colors.redAccent)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildIconStatCard("🎓", "Certificates", "20+", Colors.blueAccent)),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title.toUpperCase(), style: TextStyle(fontSize: 12, fontFamily: 'monospace', letterSpacing: 2, color: accentColor.withOpacity(0.8), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconStatCard(String icon, String title, String value, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title.toUpperCase(), style: TextStyle(fontSize: 10, fontFamily: 'monospace', letterSpacing: 2, color: accentColor.withOpacity(0.8), fontWeight: FontWeight.bold)),
+              Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutTextContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("ABOUT ", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(colors: [Colors.redAccent, Colors.blueAccent]).createShader(bounds),
+              child: const Text("ME", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
+            )
+          ],
+        ),
+        const SizedBox(height: 40),
+        
+        
+        _buildGlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 340, 
+                child: DefaultTextStyle(
+                  style: const TextStyle(color: Colors.white70, height: 1.9, fontSize: 15, fontWeight: FontWeight.w500),
+                  child: AnimatedTextKit(
+                    key: UniqueKey(), 
+                    isRepeatingAnimation: false,
+                    displayFullTextOnTap: true,
+                    animatedTexts: [
+                      TypewriterAnimatedText(
+                        "Perkenalkan, nama saya Taufiq Ikhsan Muzaky bisa di panggil (Zaky)\n\nSaya adalah Seorang siswa Dari jurusan Rekayasa Perangkat Lunak Di sekolah Smkn 2 Jakarta Pusat karena saya memiliki minat dalam pengembangan aplikasi, game dan website. Dan Berpengalaman mengerjakan berbagai proyek sekolah dan mandiri, saya berfokus pada pembuatan solusi digital yang responsif, fungsional, dan ramah pengguna.",
+                        speed: const Duration(milliseconds: 15), 
+                        textAlign: TextAlign.justify,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 10),
+              
+              // Tombol Download CV 
+             InkWell(
+                onTap: () async {
+                  final Uri url = Uri.parse('https://drive.google.com/file/d/1IDdlAhbSA-AfDoljqpdUlejUs29mrG9w/view?usp=drivesdk');
+                  if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Gagal membuka CV')),
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [Colors.redAccent.withOpacity(0.2), Colors.blueAccent.withOpacity(0.2)]),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Text("DOWNLOAD CV", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 3, color: Colors.white)),
+                ),
+              )
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -300,12 +810,46 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
             onTap: () => _openProjectOverview(p),
             child: GlowingBorder(
               child: Container(
-                margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(24)),
+                
+                margin: const EdgeInsets.only(bottom: 32), 
+                decoration: BoxDecoration(
+                  color: Colors.black45, 
+                  borderRadius: BorderRadius.circular(28), 
+                  border: Border.all(color: Colors.white10) 
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), child: AspectRatio(aspectRatio: 16/9, child: Image.asset(p.img, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(color: Colors.red.withOpacity(0.1))))),
-                    Padding(padding: const EdgeInsets.all(20), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p.subtitle, style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)), const SizedBox(height: 8), Text(p.title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900))]), const Icon(Icons.arrow_forward_ios, color: Colors.blueAccent, size: 16)]))
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)), 
+                      child: AspectRatio(aspectRatio: 16/9, child: Image.asset(p.img, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(color: Colors.red.withOpacity(0.1))))
+                    ),
+                    Padding(
+                      
+                      padding: const EdgeInsets.all(24), 
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start, 
+                              children: [
+                                Text(p.subtitle, style: const TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)), 
+                                const SizedBox(height: 8), 
+                                Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900))
+                              ]
+                            ),
+                          ), 
+                          const SizedBox(width: 16),
+                         
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.2), shape: BoxShape.circle),
+                            child: const Icon(Icons.arrow_forward_ios, color: Colors.blueAccent, size: 16)
+                          )
+                        ]
+                      )
+                    )
                   ],
                 ),
               ),
@@ -324,7 +868,7 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
         return CapCutReveal(
           scrollController: _scrollController, delay: index * 100,
           child: GestureDetector(
-            onTap: () => _openCertificateZoom(c), // 🔥 TRIGGER ZOOM DI SINI
+            onTap: () => _openCertificateZoom(c), 
             child: GlowingBorder(
               child: Container(
                 decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(20)),
@@ -388,24 +932,66 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Dialog(
-                backgroundColor: const Color(0xFF05011a), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30), side: const BorderSide(color: Colors.blueAccent, width: 2)),
+                backgroundColor: const Color(0xFF05011a), 
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30), side: const BorderSide(color: Colors.blueAccent, width: 2)),
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 500), padding: const EdgeInsets.all(24),
+                  constraints: const BoxConstraints(maxWidth: 500), padding: const EdgeInsets.all(28),
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Align(alignment: Alignment.topRight, child: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context))),
                         ClipRRect(borderRadius: BorderRadius.circular(20), child: Image.asset(project.img, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(height: 200, color: Colors.red.withOpacity(0.1)))),
-                        const SizedBox(height: 20),
-                        const Text("Project Overview", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                        const SizedBox(height: 24),
+                        
+                        
+                        SizedBox(
+                          height: 20, 
+                          child: DefaultTextStyle(
+                            style: const TextStyle(
+                              color: Colors.redAccent, 
+                              fontSize: 12, 
+                              fontWeight: FontWeight.w800, 
+                              letterSpacing: 4.0, 
+                            ),
+                            child: AnimatedTextKit(
+                              key: UniqueKey(), 
+                              isRepeatingAnimation: false, 
+                              animatedTexts: [
+                                TypewriterAnimatedText(
+                                  "PROJECT OVERVIEW", 
+                                  speed: const Duration(milliseconds: 80), 
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
+                        
                         const SizedBox(height: 10),
-                        Text(project.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                        const SizedBox(height: 15),
-                        Text(project.description, style: const TextStyle(color: Colors.white70, height: 1.6), textAlign: TextAlign.justify),
-                        const SizedBox(height: 30),
+                        Text(project.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, height: 1.2)),
+                        const SizedBox(height: 16),
+                        
+                        SizedBox(
+                          width: double.infinity,
+                          child: DefaultTextStyle(
+                            style: const TextStyle(color: Colors.white70, height: 1.6, fontSize: 14),
+                            child: AnimatedTextKit(
+                              key: UniqueKey(), 
+                              isRepeatingAnimation: false, 
+                              displayFullTextOnTap: true, 
+                              animatedTexts: [
+                                TypewriterAnimatedText(
+                                  project.description, 
+                                  speed: const Duration(milliseconds: 15) 
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 32),
                         if (project.link != null && project.link!.isNotEmpty)
-                          SizedBox(width: double.infinity, child: ElevatedButton.icon(onPressed: () => _launchURL(project.link!), icon: const Icon(Icons.bolt, color: Colors.white), style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), shadowColor: Colors.blue, elevation: 10), label: const Text("Lihat Project", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5)))),
+                          SizedBox(width: double.infinity, child: ElevatedButton.icon(onPressed: () => _launchURL(project.link!), icon: const Icon(Icons.bolt, color: Colors.white), style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, padding: const EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), shadowColor: Colors.blue, elevation: 10), label: const Text("LIHAT PROJECT", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5)))),
                       ],
                     ),
                   ),
@@ -418,7 +1004,7 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
     );
   }
 
-  // 🔥 FUNGSI BARU: ZOOM SERTIFIKAT DENGAN ANIMASI ELASTIS & BLUR 🔥
+ 
   void _openCertificateZoom(Certificate c) {
     showGeneralDialog(
       context: context, barrierDismissible: true, barrierLabel: '', transitionDuration: const Duration(milliseconds: 400),
@@ -460,47 +1046,138 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
     );
   }
 
-  Widget _buildContactSection() {
+Widget _buildContactSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: CapCutReveal(
         scrollController: _scrollController,
-        child: GlowingBorder(
-          child: Container(
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(24)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Hubungi Kami", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 10),
-                const Text("Ada yang ingin ditanyakan? Kirimin saya pesan dan mari Diskusi?\nLet's go to connect with me❤️", style: TextStyle(color: Colors.white70, height: 1.5)),
-                const SizedBox(height: 30),
-                
-                Wrap(
-                  spacing: 10, runSpacing: 10,
-                  children: listSocials.map((s) => InkWell(
-                    onTap: () => _launchURL(s.url),
-                    child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)), child: Row(mainAxisSize: MainAxisSize.min, children: [SizedBox(width: 16, height: 16, child: s.logo.contains('.svg') ? SvgPicture.network(s.logo, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)) : const Icon(Icons.link, color: Colors.white, size: 16)), const SizedBox(width: 8), Text(s.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))])),
-                  )).toList(),
-                ),
-                const SizedBox(height: 40),
-                TextField(controller: _nameController, style: const TextStyle(color: Colors.white), decoration: _inputStyle("Nama Lengkap")),
-                const SizedBox(height: 16),
-                TextField(controller: _emailController, style: const TextStyle(color: Colors.white), decoration: _inputStyle("Alamat Email")),
-                const SizedBox(height: 16),
-                TextField(controller: _messageController, style: const TextStyle(color: Colors.white), maxLines: 4, decoration: _inputStyle("Pesan Anda")),
-                const SizedBox(height: 24),
-                SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _kirimPesan, style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 20), backgroundColor: Colors.red[700], shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), shadowColor: Colors.red, elevation: 15), child: const Text("Kirim Sekarang", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 2))))
-              ],
-            ),
+        child: Container(
+         
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0D1F).withOpacity(0.8), 
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
+            boxShadow: [
+              BoxShadow(color: Colors.blueAccent.withOpacity(0.1), blurRadius: 40, spreadRadius: 5),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(colors: [Colors.white, Colors.blueAccent]).createShader(bounds),
+                child: const Text("Hubungi Kami", style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1)),
+              ),
+              const SizedBox(height: 12),
+              const Text("Ada yang ingin ditanyakan? Kirim pesan dan mari berdiskusi.\nLet's connect with me ❤️", style: TextStyle(color: Colors.white54, height: 1.6, fontSize: 14)),
+              const SizedBox(height: 36),
+              
+              
+              Wrap(
+                spacing: 12, runSpacing: 12,
+                children: listSocials.map((s) => InkWell(
+                  onTap: () => _launchURL(s.url),
+                  borderRadius: BorderRadius.circular(50),
+                  splashColor: Colors.blueAccent.withOpacity(0.2),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), 
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.03), 
+                      borderRadius: BorderRadius.circular(50), 
+                      border: Border.all(color: Colors.white.withOpacity(0.1))
+                    ), 
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, 
+                      children: [
+                       SizedBox(
+                         width: 18, height: 18, 
+                         child: s.logo.contains('.svg') 
+                                ? SvgPicture.network(
+                                 s.logo, 
+        
+                                colorFilter: (s.name == "GitHub" || s.name == "TikTok") 
+          ? const ColorFilter.mode(Colors.white, BlendMode.srcIn) 
+          : null, 
+        placeholderBuilder: (context) => const CircularProgressIndicator(strokeWidth: 2, color: Colors.white30)
+      ) 
+    : const Icon(Icons.link, color: Colors.white, size: 18)
+),
+                        const SizedBox(width: 10), 
+                        Text(s.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5))
+                      ]
+                    )
+                  ),
+                )).toList(),
+              ),
+              
+              const SizedBox(height: 48),
+            
+              TextField(controller: _nameController, style: const TextStyle(color: Colors.white), decoration: _inputStyle("Nama Lengkap", Icons.person_outline)),
+              const SizedBox(height: 20),
+              TextField(controller: _emailController, style: const TextStyle(color: Colors.white), decoration: _inputStyle("Alamat Email", Icons.email_outlined)),
+              const SizedBox(height: 20),
+              TextField(controller: _messageController, style: const TextStyle(color: Colors.white), maxLines: 5, decoration: _inputStyle("Pesan Anda", Icons.message_outlined, isMessage: true)),
+              const SizedBox(height: 36),
+              
+             
+              SizedBox(
+                width: double.infinity, 
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(colors: _isSending ? [Colors.grey[800]!, Colors.grey[700]!] : [const Color(0xFFFF416C), const Color(0xFFFF4B2B)]), 
+                    boxShadow: _isSending ? [] : [
+                      BoxShadow(color: const Color(0xFFFF4B2B).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))
+                    ]
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _isSending ? null : _kirimPesan,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 22), 
+                      backgroundColor: Colors.transparent, 
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), 
+                    ), 
+                    child: _isSending 
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)),
+                            SizedBox(width: 16),
+                            Text("MENGIRIM PESAN...", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 3, fontSize: 13))
+                          ],
+                        )
+                      : const Text("KIRIM SEKARANG", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 3, fontSize: 14))
+                  )
+                )
+              )
+            ],
           ),
         ),
       ),
     );
   }
 
-  InputDecoration _inputStyle(String hint) => InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.white38), filled: true, fillColor: Colors.white.withOpacity(0.05), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.white24)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.blueAccent)));
+  InputDecoration _inputStyle(String hint, IconData icon, {bool isMessage = false}) => InputDecoration(
+    hintText: hint, 
+    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)), 
+    
+    prefixIcon: Padding(
+      padding: EdgeInsets.only(
+        bottom: isMessage ? 90 : 0, 
+      ),
+      child: Icon(icon, color: Colors.white.withOpacity(0.4), size: 20),
+    ),
+    
+    filled: true, 
+    fillColor: Colors.black.withOpacity(0.3), 
+    contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none), 
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.white.withOpacity(0.05), width: 1.5)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.blueAccent, width: 2))
+  );
 
   Widget _buildFooter() {
     return CapCutReveal(
@@ -533,9 +1210,6 @@ class _MainPortfolioScreenState extends State<MainPortfolioScreen> {
   }
 }
 
-// ==========================================
-// CUSTOM ENGINE: BACKGROUND MELAYANG (DYNAMIC)
-// ==========================================
 class FloatingBackground extends StatefulWidget {
   final Color color; final double size; final double speed; final Offset startOffset;
   const FloatingBackground({super.key, required this.color, required this.size, required this.speed, required this.startOffset});
@@ -567,9 +1241,6 @@ class _FloatingBackgroundState extends State<FloatingBackground> with SingleTick
   }
 }
 
-// ==========================================
-// CUSTOM ENGINE: CAPCUT REVEAL (BOUNCE & REPEAT PADA SCROLL)
-// ==========================================
 class CapCutReveal extends StatefulWidget {
   final Widget child; final ScrollController scrollController; final int delay; final VoidCallback? onVisible;
   const CapCutReveal({super.key, required this.child, required this.scrollController, this.delay = 0, this.onVisible});
@@ -616,9 +1287,6 @@ class _CapCutRevealState extends State<CapCutReveal> with SingleTickerProviderSt
   }
 }
 
-// ==========================================
-// CUSTOM ENGINE: GLOWING BORDER (CAPCUT STYLE)
-// ==========================================
 class GlowingBorder extends StatefulWidget {
   final Widget child; final bool isCircle;
   const GlowingBorder({super.key, required this.child, this.isCircle = false});
@@ -651,10 +1319,8 @@ class _GlowingBorderState extends State<GlowingBorder> with SingleTickerProvider
     );
   }
 }
+// 3. SEMUA DATA 
 
-// ==========================================
-// 3. SEMUA DATA ASLI (TIDAK DIUBAH SAMA SEKALI)
-// ==========================================
 class Project { final int id; final String title, subtitle, img; final List<String> images; final String description; final String? link; Project({required this.id, required this.title, required this.subtitle, required this.img, required this.images, required this.description, this.link}); }
 class Tool { final String name, logo; Tool({required this.name, required this.logo}); }
 class Certificate { final int id; final String title, issuer, img, date; Certificate({required this.id, required this.title, required this.issuer, required this.img, required this.date}); }
@@ -670,16 +1336,21 @@ final List<Project> listProyek = [
 ];
 
 final List<Tool> listTools = [
-  Tool(name: "HTML", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg"), Tool(name: "CSS", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg"), Tool(name: "JavaScript", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"), Tool(name: "React", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg"), Tool(name: "Tailwind", logo: "https://raw.githubusercontent.com/devicons/devicon/v2.16.0/icons/tailwindcss/tailwindcss-original.svg"), Tool(name: "PHP", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg"), Tool(name: "MySQL", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg"), Tool(name: "Android Studio", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/androidstudio/androidstudio-original.svg"), Tool(name: "Sketchware", logo: "assets/sketchware.jpg"), Tool(name: "Visual Code", logo: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg"),
+  Tool(name: "HTML", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg"), Tool(name: "CSS", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg"), Tool(name: "JavaScript", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"), Tool(name: "React", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg"), Tool(name: "Tailwind", logo: "https://raw.githubusercontent.com/devicons/devicon/v2.16.0/icons/tailwindcss/tailwindcss-original.svg"), Tool(name: "PHP", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg"), Tool(name: "MySQL", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg"), Tool(name: "Android Studio", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/androidstudio/androidstudio-original.svg"), Tool(name: "flutter", logo: "assets/flutter.png"), Tool(name: "Dart", logo: "assets/Dart.png"), Tool(name: "Sketchware", logo: "assets/sketchware.jpg"),  Tool(name: "Visual Code", logo: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg"),
 ];
 
 final List<Tool> listOS = [ Tool(name: "Windows", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/windows8/windows8-original.svg"), Tool(name: "Android", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/android/android-original.svg"), Tool(name: "Ubuntu", logo: "https://upload.wikimedia.org/wikipedia/commons/9/9e/UbuntuCoF.svg"), Tool(name: "Linux", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg") ];
-final List<Tool> listDesignTools = [ Tool(name: "Figma", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/figma/figma-original.svg"), Tool(name: "Unity", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original.svg"), Tool(name: "Canva", logo: "https://www.vectorlogo.zone/logos/canva/canva-icon.svg"), Tool(name: "Lightroom", logo: "https://upload.wikimedia.org/wikipedia/commons/b/b6/Adobe_Photoshop_Lightroom_CC_logo.svg"), Tool(name: "Capcut", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1c/Capcut-icon.svg") ];
+final List<Tool> listDesignTools = [ Tool(name: "Figma", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/figma/figma-original.svg"), Tool(name: "Unity", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/unity/unity-original.svg"), Tool(name: "Canva", logo: "assets/canva.png"), Tool(name: "Lightroom", logo: "https://upload.wikimedia.org/wikipedia/commons/b/b6/Adobe_Photoshop_Lightroom_CC_logo.svg"), Tool(name: "Capcut", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1c/Capcut-icon.svg") ];
 
 final List<Certificate> listCertificates = [
   Certificate(id: 1, title: "Membangun aplikasi Gen Ai Dengan microsoft azure", issuer: "Dicoding Indonesia", img: "assets/sertifikat_ microsoft_azure.jpg", date: "01-03-2026"), Certificate(id: 2, title: "Belajar Microsoft Fabric", issuer: "Dicoding Indonesia", img: "assets/sertifikat_microsoft_belajar.jpg", date: "28-02-2026"), Certificate(id: 3, title: "AI READY ASEAN", issuer: "ASEAN FOUNDATION", img: "assets/certificate_asean.jpg", date: "20-02-2026"), Certificate(id: 4, title: "DFS 48 Design: UI/UX", issuer: "Dibimbing Id", img: "assets/certificate_Ui-Ux_11-feb.jpg", date: "11-02-2026"), Certificate(id: 5, title: "Back End", issuer: "Myskill", img: "assets/certificate_backendmyskill-19-des.jpg", date: "19-01-2026"), Certificate(id: 6, title: "Data Analyst", issuer: "MySkill", img: "assets/certificate_datamyskill-13-jan.jpg", date: "13-01-2026"), Certificate(id: 7, title: "DSF 46 Back-end", issuer: "Dibimbing Id", img: "assets/certificate_backend_19-des.jpg", date: "19-12-2025"), Certificate(id: 10, title: "DSF 46 Data Enginner", issuer: "Dibimbing Id", img: "assets/certificate_data_12-des.jpg", date: "12-12-2025"), Certificate(id: 11, title: "DSF 46 Design: UI/UX", issuer: "Dibimbing Id", img: "assets/certificate_12-des.jpg", date: "12-12-2025"), Certificate(id: 12, title: "Memulai Pemrograman java", issuer: "Dicoding Indonesia", img: "assets/sertifikat_java.jpg", date: "11-12-2025"), Certificate(id: 13, title: "Belajar Ai", issuer: "Dicoding Indonesia", img: "assets/sertifikat belajar_ai.jpg", date: "30-10-2025"), Certificate(id: 14, title: "Virtual Bootcamp UNSIA x UNAS", issuer: "Universitas Siber Asia", img: "assets/Sertifikat-Cyber_Security.jpg", date: "16-08-2024"), Certificate(id: 15, title: "Bimasakti Cup 1 Chapter PU-PK ", issuer: "founder Bimasakti Foundation.", img: "assets/SMPN 23 JAKARTA - Taufiq ikhsan muzaky.jpg", date: "24-03-2024"), Certificate(id: 16, title: "Jambore Ranting Pramuka", issuer: "Gerakan Pramuka tingkat kwarran Pademangan", img: "assets/sertifikat_Jambore-ragunan.jpg", date: "19-11-2023"), Certificate(id: 17, title: "Ujian PMR Tingkat madya", issuer: "PMI Kota Jakarta utara", img: "assets/sertifikat_ujian-pmr.jpg", date: "02-10-2023"), Certificate(id: 18, title: "Latihan Gabungan Tingkat madya", issuer: "SMP NURUL IMAN ARHANUD", img: "assets/sertifikat_Latihan-pmr-2022.jpg", date: "10-10-2022"), Certificate(id: 19, title: "ANBK", issuer: "Smpn 23 Jakarta", img: "assets/sertifikat_ANBK-2022.jpg", date: "20-09-2022"), Certificate(id: 20, title: "UKBI", issuer: "Smpn 23 Jakarta", img: "assets/sertifikat_UKBI-2022.jpg", date: "05-09-2022"),
 ];
 
 final List<Social> listSocials = [
-  Social(name: "LinkedIn", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg", url: "https://www.linkedin.com/in/taufiq-ikhsan-muzaky-42ab26388"), Social(name: "WhatsApp", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg", url: "https://wa.me/6285810192529"), Social(name: "Instagram", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg", url: "https://www.instagram.com/mzky_zak?igsh=eWN2cjlzeXhuMmR0"), Social(name: "GitHub", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg", url: "https://github.com/mzkyzak"), Social(name: "TikTok", logo: "https://upload.wikimedia.org/wikipedia/commons/3/34/Ionicons_logo-tiktok.svg", url: "https://www.tiktok.com/@mzky896?_r=1&_t=ZS-94NhHqsvv1R"), Social(name: "Youtube", logo: "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg", url: "https://youtube.com/@muzaky_2023?si=oe32_JqtG5jXNakL"),
+  Social(name: "LinkedIn", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg", url: "https://www.linkedin.com/in/taufiq-ikhsan-muzaky-42ab26388"),
+  Social(name: "WhatsApp", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg", url: "https://wa.me/6285810192529"),
+  Social(name: "Instagram", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg", url: "https://www.instagram.com/mzky_zak?igsh=eWN2cjlzeXhuMmR0"),
+  Social(name: "GitHub", logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg", url: "https://github.com/mzkyzak"),
+  Social(name: "TikTok", logo: "https://upload.wikimedia.org/wikipedia/commons/3/34/Ionicons_logo-tiktok.svg", url: "https://www.tiktok.com/@mzky896?_r=1&_t=ZS-94NhHqsvv1R"),
+  Social(name: "Youtube", logo: "https://www.vectorlogo.zone/logos/youtube/youtube-icon.svg", url: "https://youtube.com/@muzaky_2023?si=oe32_JqtG5jXNakL"),
 ];
